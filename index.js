@@ -8,10 +8,18 @@ require('dotenv').config();
 const mongodb = process.env.MONGO_URI;
 mongoose.connect(mongodb, { useNewUrlParser: true, useUnifiedTopology: true });
 
+const exerciseSchema = new Schema({
+  description: String,
+  duration: Number,
+  date: String
+});
+let Exercise = mongoose.model('Exercise', exerciseSchema);
 const userSchema = new Schema({
-  username: String
+  username: String,
+  exercises: [exerciseSchema]
 });
 let User = mongoose.model('User', userSchema);
+
 
 app.use(cors())
 app.use(express.static('public'))
@@ -49,7 +57,28 @@ app.get('/api/users', async function(req, res) {
   }
 });
 
-
+app.post('/api/users/:_id/exercises', async function(req, res) {
+  const userId = req.params._id;
+  const description = req.body.description;
+  const duration = req.body.duration;
+  let date = req.body.date;
+  if (!date) {
+    date = new Date().toDateString();
+  } else {
+    date = new Date(date).toDateString();
+  }
+    const updatedUser = await User.findByIdAndUpdate(userId, 
+      { $push: { exercises: { description, duration: Number(duration), date } } },
+      { new: true }
+      );
+    res.json({ 
+      username: updatedUser.username,
+      description: description,
+      duration: Number(duration),
+      date: date,
+      _id: userId
+    });
+  });
 
 
 const listener = app.listen(process.env.PORT || 3000, () => {
