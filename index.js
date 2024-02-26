@@ -13,7 +13,7 @@ const exerciseSchema = new Schema({
   duration: Number,
   date: String
 });
-let Exercise = mongoose.model('Exercise', exerciseSchema);
+
 const userSchema = new Schema({
   username: String,
   exercises: [exerciseSchema]
@@ -80,6 +80,42 @@ app.post('/api/users/:_id/exercises', async function(req, res) {
     });
   });
 
+app.get('/api/users/:_id/logs', async function(req, res) {
+  const userId = req.params._id;
+  const foundUser = await User.findById(userId);
+  if (!foundUser) {
+    return res.status(404).send({ message: "User not found" });
+  }
+  const exercisesCount = foundUser.exercises.length;
+  const fromQuery = req.query.from ? new Date(req.query.from) : null; //date
+  const toQuery = req.query.to ? new Date(req.query.to) : null; //date
+  const limitQuery = parseInt(req.query.limit, 10); //number
+  let exercises = foundUser.exercises;
+
+  if (fromQuery || toQuery) {
+    exercises = exercises.filter(exercise => {
+      const exerciseDate = new Date(exercise.date);
+      return (!fromQuery || exerciseDate >= fromQuery) && (!toQuery || exerciseDate <= toQuery);
+    });
+  }
+
+  if(!isNaN(limitQuery)) {
+    exercises = exercises.slice(0, limitQuery);
+  }
+
+  const formattedExercises = exercises.map(exercise => ({
+    description: exercise.description,
+    duration: exercise.duration,
+    date: exercise.date
+  }));
+
+  res.json({
+    username: foundUser.username,
+    count: exercisesCount,
+    _id: userId,
+    log: formattedExercises
+  });
+});
 
 const listener = app.listen(process.env.PORT || 3000, () => {
   console.log('Your app is listening on port ' + listener.address().port)
