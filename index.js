@@ -39,7 +39,16 @@ app.post('/api/users', async function(req, res) {
   }      
 });
 
-
+app.get('/users', async function(req, res) {
+  try {
+    const users = await User.find({}).select('username _id');
+    res.json(users);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("An error occurred while fetching users.");
+  }
+ 
+});
 
 
 
